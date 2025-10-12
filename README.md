@@ -1,31 +1,71 @@
-# qobuz-rpc
-A simple discord rich presence client for qobuz written in Python
+Qobuz Discord RPC Synchronizer (GUI)
 
-It's currently only working on Windows, but feel free to add support for any other OOS
+A desktop GUI application for Windows that automatically sets your Discord Rich Presence (RPC) status to the music you're currently playing on the Qobuz desktop client.
 
-## Setup
-It's a simple command-line tool, I'm not sure if I will upgrade to something graphical, but you're welcome to do so.
+This project provides a graphical interface and continuous development on the foundation of the original command-line script.
+✨ Features
 
-To run the tool on cli you need first need the following python packages
+    GUI Application: Easy-to-use graphical interface for simple control.
 
-```
-pypresence
-psutil
-pywin32
-```
+    Automatic Status: Synchronizes your Discord status with the currently playing track on Qobuz.
 
-You should be able to simply install them with pip.
+    Dynamic Album Art: Fetches album artwork from the iTunes public API for a richer presence display.
 
-If you encounter any problem with the program feel free to contact me either on Discord (`Lockna#5599`) or via [e-mail](mailto:raphael.ob@protonmail.com)
+    Built-in Update Check: Notifies you when a new version is available directly within the application.
 
-## TODO
- - Find the Qobuz Endpoint where I get the duration of the track so I can add a xx:xx left or xx:xx elapsed time counter.
- - Add multiple assets to the Discord application so you can switch the shown picture
- - See if it is possible to use an asset directly after uploading it to Discord Assets. If so, get images of the track via Qobuz API and upload.
-Or use the newer alternative where you can directly use an image url
+    Windows Only: Designed specifically to integrate with the Qobuz Windows desktop client.
 
+💻 Installation & Usage (End User)
 
-#### Misc
-I used Python version 3.9.9 for programming and testing, so I'm not sure if it still works with newer version.
-If not please let me know.
+The simplest way to use this application is by downloading and running the compiled Windows executable (.exe). No Python installation is required for end-users.
+Prerequisites
 
+    Qobuz Desktop Application must be running.
+
+    Discord Desktop Application must be running.
+
+    In Discord, go to User Settings → Activity Privacy and ensure "Display current activity as a status message" is enabled.
+
+Steps
+
+    Go to the Releases page on GitHub.
+
+    Download the latest compiled executable file (e.g., qobuz_rpc_gui.exe).
+
+    Double-click the downloaded executable to launch the GUI.
+
+    Click the "Start RPC" button within the application window.
+
+The application will now run in the background, continuously monitoring Qobuz and updating your Discord status.
+
+    Note: Closing the main GUI window will automatically stop the RPC connection.
+
+🛠️ Developer Setup (From Source)
+
+If you wish to run the script directly from Python source code, you must manually install the required libraries.
+Required Python Packages
+
+pip install pypresence psutil pywin32 requests packaging
+
+Running the Script
+
+python qobuz_rpc_gui.py
+
+💖 Credits and Original Work
+
+This project is a continuation of the original proof-of-concept command-line script created by Lockna.
+
+We extend our sincere thanks to Lockna for providing the foundational script and logic for this Rich Presence synchronizer.
+
+    Original Creator: Lockna
+
+    Original Repository: Lockna/qobuz-rpc
+
+If you encounter any problem with the program, please feel free to open a GitHub Issue.
+✅ Future TODO
+
+    Implement proper time remaining/elapsed counter (Requires a robust way to determine track duration/progress).
+
+    Refine the album art caching logic.
+
+    Explore support for other operating systems (macOS/Linux via different window tracking methods).

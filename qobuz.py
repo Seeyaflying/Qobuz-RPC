@@ -1,5 +1,5 @@
 # Qobuz Discord Rich Presence Synchronizer with GUI
-# Requires: pypresence, psutil, pywin32, requests, tkinter
+# Requires: pypresence, psutil, pywin32, requests, tkinter, packaging
 # Must be run on Windows to use win32gui/win32process for window tracking.
 
 import tkinter as tk
@@ -8,12 +8,13 @@ import threading
 import time
 import os
 import requests
+from packaging.version import parse as parse_version
 
-# --- Versioning and Update Configuration ---
-LOCAL_VERSION = "1.0.0"  # IMPORTANT: Update this with every new release
-# PLACEHOLDER: Change this URL to point to a raw text file in your GitHub repo
-# that contains ONLY the string of the latest version number (e.g., "1.0.1").
-VERSION_URL = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/latest_version.txt"
+# --- 1. Versioning and Update Configuration ---
+LOCAL_VERSION = "1.0.0"
+# GitHub links (configured to your repo: Seeyaflying/Qobuz-RPC)
+VERSION_URL = "https://raw.githubusercontent.com/Seeyaflying/Qobuz-RPC/main/latest_version.txt"
+DOWNLOAD_URL = "https://github.com/Seeyaflying/Qobuz-RPC/releases/latest"
 # -------------------------------------------
 
 # --- External Windows and RPC Libraries ---
@@ -49,19 +50,64 @@ except ImportError:
 else:
     RPC_AVAILABLE = True
     # Define Windows API functions for window title retrieval
-    # Using ctypes for direct DLL calls
     try:
         GetWindowText = ctypes.windll.user32.GetWindowTextW
         GetWindowTextLength = ctypes.windll.user32.GetWindowTextLengthW
         IsWindowVisible = ctypes.windll.user32.IsWindowVisible
     except AttributeError:
-        # Fallback in case of ctypes error during runtime
         RPC_AVAILABLE = False
 
 # Discord Application Client ID for Qobuz (Hardcoded)
 CLIENT_ID = "928957672907227147"
 QOBUZ_PROCESS_NAME = "Qobuz.exe"
 
+
+# --- 2. ROBUST UPDATE CHECKING LOGIC ---
+
+def fetch_latest_version(url, max_retries=3):
+    """Fetches the latest version string from the remote URL with retries."""
+    for attempt in range(max_retries):
+        try:
+            # Set a reasonable timeout for network requests
+            response = requests.get(url, timeout=5)
+            response.raise_for_status()
+            return response.text.strip()
+        except requests.exceptions.RequestException as e:
+            if attempt < max_retries - 1:
+                # Exponential backoff
+                time.sleep(2 ** attempt)
+    return None
+
+
+def check_for_updates_logic(local_version, version_url, download_url):
+    """Compares versions and returns a status dictionary."""
+    remote_version_str = fetch_latest_version(version_url)
+
+    if remote_version_str is None:
+        return {"status": "error", "message": "Update check failed (Network Error)."}
+
+    try:
+        local = parse_version(local_version)
+        remote = parse_version(remote_version_str)
+
+        if remote > local:
+            # Enhanced message with clear call-to-action and URL
+            message = (
+                f"🚨 UPDATE AVAILABLE! 🚨\n\n"
+                f"Your version: v{local_version}\n"
+                f"Latest version: v{remote_version_str}\n\n"
+                f"Please download the new executable from the GitHub repository:\n"
+                f"{download_url}"
+            )
+            return {"status": "update", "message": message, "remote_version": remote_version_str}
+
+        return {"status": "ok", "message": f"Running latest version (v{local_version})."}
+
+    except Exception:
+        return {"status": "error", "message": "Update check failed (Parsing Error)."}
+
+
+# --- 3. RPC SYNCHRONIZER THREAD ---
 
 class RPCSynchronizer(threading.Thread):
     """Handles the Discord RPC connection and background window title monitoring."""
@@ -265,14 +311,16 @@ class RPCSynchronizer(threading.Thread):
             pass
 
 
+# --- 4. TKINTER GUI CLASS ---
+
 class QobuzRPCApp:
     """The main Tkinter application class for the GUI."""
 
     def __init__(self, master):
         self.master = master
         master.title(f"Qobuz Discord RPC Synchronizer (v{LOCAL_VERSION})")
-        # Window size increased to 550x350
-        master.geometry("550x350")
+        # Window size increased to 550x450 as requested
+        master.geometry("550x450")
         master.resizable(False, False)
         master.configure(bg='#36393F')
 
@@ -358,6 +406,7 @@ class QobuzRPCApp:
 
         # --- Version Info and Update Button ---
         version_frame = tk.Frame(self.main_frame, bg=master['bg'], pady=5)
+        # Sticky 'ew' to center content in the wider frame
         version_frame.grid(row=row_idx, column=0, sticky='ew');
         row_idx += 1
 
@@ -372,53 +421,60 @@ class QobuzRPCApp:
                   cursor="hand2").pack()
         # ----------------------------------------
 
+        # Start update check immediately on load
+        self._start_initial_update_check()
+
     def update_status(self, message, color=None):
         """Updates the status label text and color."""
         self.status_var.set(message)
         if color:
             self.status_label.config(fg=color)
         # Use simple string matching for color changes
-        elif "Error" in message or "Failed" in message or "search failed" in message or "Runtime" in message or "Update available" in message:
+        elif "Error" in message or "Failed" in message or "Update available" in message:
             self.status_label.config(fg=self.color_status_fail)
         elif "Playing" in message or "Connected" in message or "Found" in message or "latest version" in message:
             self.status_label.config(fg=self.color_status_ok)
         else:
             self.status_label.config(fg=self.color_text)
 
-    def check_for_updates(self):
-        """Starts the update check process in a separate thread."""
+    # --- New Robust Update Check Methods ---
+
+    def _start_initial_update_check(self):
+        """Starts the update check on application startup in a non-blocking thread."""
         self.update_status("Checking for updates...")
-        # Run network operation in a thread to keep GUI responsive
-        threading.Thread(target=self._run_update_check_async, daemon=True).start()
+        threading.Thread(target=self._check_for_updates_async, daemon=True).start()
 
-    def _run_update_check_async(self):
-        """Handles the actual network request for the version file."""
-        try:
-            response = requests.get(VERSION_URL, timeout=10)
-            response.raise_for_status()
+    def check_for_updates(self):
+        """Called by the manual button. Starts the update check process."""
+        self.update_status("Checking for updates manually...")
+        threading.Thread(target=self._check_for_updates_async, daemon=True).start()
 
-            # The version file should only contain the version string (e.g., "1.0.1")
-            remote_version = response.text.strip()
+    def _check_for_updates_async(self):
+        """The thread target that performs the network check and updates the GUI."""
+        update_info = check_for_updates_logic(LOCAL_VERSION, VERSION_URL, DOWNLOAD_URL)
 
-            # Simple lexicographical comparison works for standard version numbers like X.Y.Z
-            if remote_version and remote_version > LOCAL_VERSION:
-                # Use master.after(0, ...) to ensure GUI update runs on the main thread
-                self.master.after(0, lambda: self.update_status(
-                    f"Update available! v{remote_version} (Local: v{LOCAL_VERSION})", color=self.color_status_fail))
-                messagebox.showinfo("Update Available",
-                                    f"A new version ({remote_version}) is available!\n\nPlease visit the GitHub repository to download the latest executable.")
-            else:
-                self.master.after(0, lambda: self.update_status(f"Running latest version (v{LOCAL_VERSION}).",
-                                                                color=self.color_status_ok))
+        # Use master.after(0, ...) to ensure GUI update runs on the main thread
+        self.master.after(0, lambda: self._handle_update_result_gui(update_info))
 
-        except requests.exceptions.RequestException:
-            self.master.after(0, lambda: self.update_status("Update check failed (Network Error).",
-                                                            color=self.color_status_fail))
-            print("Update check failed (Network Error).")  # Error log
-        except Exception:
-            self.master.after(0, lambda: self.update_status("Update check failed (Parsing Error).",
-                                                            color=self.color_status_fail))
-            print("Update check failed (Parsing Error).")  # Error log
+    def _handle_update_result_gui(self, update_info):
+        """Updates GUI based on the result of the update check."""
+        if update_info["status"] == "update":
+            # Update the main status bar with the key info
+            self.update_status(
+                f"Update available! v{update_info['remote_version']} (Local: v{LOCAL_VERSION})",
+                color=self.color_status_fail
+            )
+            # Show the detailed message box which includes the full URL
+            messagebox.showinfo("Update Available", update_info["message"])
+        elif update_info["status"] == "error":
+            # Only show this error if it's not the initial 'Ready to Start' status
+            if self.status_var.get() != "Ready to Start":
+                self.update_status(f"Update check failed: {update_info['message']}",
+                                   color=self.color_status_fail)
+        elif update_info["status"] == "ok":
+            self.update_status(update_info['message'], color=self.color_status_ok)
+
+    # --- RPC Control Methods ---
 
     def start_rpc(self):
         """Starts the RPC background thread."""
