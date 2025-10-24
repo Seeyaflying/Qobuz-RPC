@@ -22,6 +22,10 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+        buildConfigField("String", "DISCORD_CLIENT_ID", "\"YOUR_CLIENT_ID_HERE\"")
+        buildConfigField("String", "DISCORD_CLIENT_SECRET", "\"YOUR_CLIENT_SECRET_HERE\"")
+        buildConfigField("String", "DISCORD_REDIRECT_URI", "\"com.example.myapplication://callback\"")
+
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
