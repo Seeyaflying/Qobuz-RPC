@@ -38,6 +38,28 @@ The application will now run in the background, continuously monitoring Qobuz an
 > **Note:** Closing the main GUI window will automatically stop the RPC connection.
 
 ---
+## 🛑 Important: Windows Security Warning (SmartScreen)
+
+Because this application is new and maintained by a small group of independent developers, **Windows Defender SmartScreen** has not yet built a positive reputation for it. This is a common issue for new software.
+
+**Your app is safe to use.** You may see a temporary warning when you first download or run the installer.
+
+### How to Safely Bypass the SmartScreen Warning
+
+If you see a blue window titled **"Windows protected your PC,"** follow these two steps to complete the installation:
+
+1.  Click the **"More info"** text link, located beneath the main message.
+2.  A new button will appear on the right. Click **"Run anyway"** to launch the installer.
+
+### Our Plan to Resolve This Permanently
+
+We are actively working to establish trust and resolve this warning for all future users by:
+
+* Submitting the file to Microsoft for review as a false positive.
+* Acquiring a **Code Signing Certificate** to verify our identity as the publisher and instantly boost reputation.
+
+### This is a temporary inconvenience, and we appreciate your support! If you have any concerns, please contact our support channel at **turtlehavengames@gmail.com**.
+
 
 ## 🛠️ Developer Setup (From Source)
 
