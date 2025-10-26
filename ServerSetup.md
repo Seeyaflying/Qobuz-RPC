@@ -1,4 +1,40 @@
-Part 1: Setting Up the Google Cloud ServerThis part is done on the Google Cloud website.1.Create a Google Cloud Account: If you don't have one, sign up for Google Cloud. New users get a significant free credit, which is more than enough for this project.2.Create a New Project: In the Google Cloud Console, create a new project (e.g., "qobuz-rpc-server").3.Create the Virtual Machine (VM) Instance:◦Navigate to Compute Engine > VM instances.◦Click "Create Instance".◦Name: Give it a simple name, like rpc-server-vm.◦Region and Zone: Choose a region close to you (e.g., us-central1). The zone doesn't matter as much (us-central1-a).◦Machine Configuration: This is the most important step for the free tier.▪Series: E2▪Machine type: e2-micro (This is part of the free tier).◦Boot Disk:▪Click "Change".▪Operating system: Debian▪Version: Debian GNU/Linux 11 (bullseye) or newer. This is a stable, lightweight choice.▪Click "Select".◦Firewall:▪Check the box for "Allow HTTP traffic".▪Check the box for "Allow HTTPS traffic".4.Create the Instance: Click the "Create" button at the bottom. Wait a minute or two for your new virtual server to be created. Once it's ready, you will see a green checkmark and an External IP address. Copy this IP address.5.Create a Firewall Rule for Port 5000:◦In the Google Cloud navigation menu, go to VPC network > Firewall.◦Click "Create Firewall Rule".◦Name: allow-port-5000.◦Targets: Select "All instances in the network".◦Source IPv4 ranges: 0.0.0.0/0 (This means "allow traffic from any IP address").◦Protocols and ports:▪Select "Specified protocols and ports".▪Check the "TCP" box and enter 5000 in the field next to it.◦Click "Create". This opens the necessary port so your Android app can reach the Python server.Part 2: Setting Up the Server SoftwareNow we'll connect to the server and install everything it needs.1.Connect via SSH: On the VM instances page, find your rpc-server-vm and click the "SSH" button. This will open a browser-based command line terminal connected directly to your server.2.Install Python and Dependencies: Run the following commands one by one in the SSH terminal.Kotlin# Update the server's package list
+Part 1: Setting Up the Google Cloud ServerThis part is done on the Google Cloud website.
+
+1.Create a Google Cloud Account: If you don't have one, sign up for Google Cloud. New users get a significant free credit, which is more than enough for this project.
+
+2.Create a New Project: In the Google Cloud Console, create a new project (e.g., "qobuz-rpc-server").
+
+3.Create the Virtual Machine (VM) Instance:
+
+◦Navigate to Compute Engine > VM instances.
+
+◦Click "Create Instance".◦Name: Give it a simple name, like rpc-server-vm.
+
+◦Region and Zone: Choose a region close to you (e.g., us-central1). The zone doesn't matter as much (us-central1-a).
+
+◦Machine Configuration: This is the most important step for the free tier.▪Series: E2▪Machine type: e2-micro (This is part of the free tier).
+
+◦Boot Disk:▪Click "Change".▪Operating system: Debian▪Version: Debian GNU/Linux 11 (bullseye) or newer. This is a stable, lightweight choice.
+
+▪Click "Select".◦Firewall:▪Check the box for "Allow HTTP traffic".▪Check the box for "Allow HTTPS traffic".
+
+4.Create the Instance: Click the "Create" button at the bottom. Wait a minute or two for your new virtual server to be created. Once it's ready, you will see a green checkmark and an External IP address. Copy this IP address.
+
+5.Create a Firewall Rule for Port 5000:◦In the Google Cloud navigation menu, go to VPC network > Firewall.◦Click "Create Firewall Rule".
+
+◦Name: allow-port-5000.◦Targets: Select "All instances in the network".
+
+◦Source IPv4 ranges: 0.0.0.0/0 (This means "allow traffic from any IP address").
+
+◦Protocols and ports:▪Select "Specified protocols and ports".▪Check the "TCP" box and enter 5000 in the field next to it.
+
+◦Click "Create". This opens the necessary port so your Android app can reach the Python server.
+
+Part 2: Setting Up the Server SoftwareNow we'll connect to the server and install everything it needs.
+
+1.Connect via SSH: On the VM instances page, find your rpc-server-vm and click the "SSH" button. This will open a browser-based command line terminal connected directly to your server.
+
+2.Install Python and Dependencies: Run the following commands one by one in the SSH terminal.Kotlin# Update the server's package list
 sudo apt-get update
 
 # Install Python, pip (Python's package installer), and Git
