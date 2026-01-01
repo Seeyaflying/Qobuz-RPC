@@ -1,5 +1,22 @@
-# Qobuz Discord Rich Presence Synchronizer with GUI
-# Requires: pypresence, psutil, pywin32, requests, tkinter, packaging, flask
+# --- Nuitka Build Configuration (Hints) ---
+# nuitka-project: --standalone
+# nuitka-project: --deployment
+# nuitka-project: --msvc=latest
+# nuitka-project: --windows-console-mode=disable
+# nuitka-project: --enable-plugin=tk-inter
+# nuitka-project: --include-package=pypresence
+# nuitka-project: --include-package=requests
+# nuitka-project: --include-package=psutil
+# nuitka-project: --include-package=packaging
+# nuitka-project: --include-package=flask
+# nuitka-project: --include-package=werkzeug
+# nuitka-project: --company-name="Seeyaflying"
+# nuitka-project: --product-name="Qobuz-RPC"
+# nuitka-project: --file-description="Discord Rich Presence for Qobuz"
+# nuitka-project: --file-version=1.0.1
+# nuitka-project: --output-dir=dist
+# nuitka-project: --remove-output
+# -------------------------------------------
 
 import tkinter as tk
 from tkinter import messagebox
@@ -8,11 +25,9 @@ import time
 import os
 import requests
 from packaging.version import parse as parse_version
-
-# --- Web Server Imports ---
 from flask import Flask, request, jsonify
 
-# --- External Windows and RPC Libraries (Your original code) ---
+# --- External Windows and RPC Libraries ---
 try:
     from pypresence import Presence
     import psutil
@@ -46,15 +61,14 @@ except (ImportError, AttributeError):
     psutil = None;
     ctypes = None
 
-# --- Configuration (Your original code) ---
-LOCAL_VERSION = "1.0.0"
+# --- Configuration ---
+LOCAL_VERSION = "1.0.1"
 VERSION_URL = "https://raw.githubusercontent.com/Seeyaflying/Qobuz-RPC/main/latest_version.txt"
 DOWNLOAD_URL = "https://github.com/Seeyaflying/Qobuz-RPC/releases/latest"
 CLIENT_ID = "928957672907227147"
 QOBUZ_PROCESS_NAME = "Qobuz.exe"
 
 
-# --- Update Checking Logic (Your original code, with KeyError fix) ---
 def fetch_latest_version(url, max_retries=3):
     for attempt in range(max_retries):
         try:
@@ -82,7 +96,6 @@ def check_for_updates_logic(local_version, version_url, download_url):
         return {"status": "error", "message": "Update check failed (Parsing Error)."}
 
 
-# --- RPC SYNCHRONIZER THREAD (With Final Fix) ---
 class RPCSynchronizer(threading.Thread):
     def __init__(self, app_instance, client_id):
         super().__init__()
@@ -93,32 +106,28 @@ class RPCSynchronizer(threading.Thread):
         self.art_cache = {}
 
     def force_update_presence(self, title):
-        """A thread-safe function to handle updates from any source."""
-
         def _update_task():
             try:
-                # --- THIS IS THE FINAL FIX ---
-                # Instead of checking for 'self.rpc.sock', just check 'self.rpc'
                 if not self.rpc:
                     print("RPC not connected, cannot update presence.")
                     return
-                # --- END OF FINAL FIX ---
-
                 if not title:
                     self.rpc.clear()
                     self.app.update_status("Qobuz: Cleared by remote")
                     return
 
                 song_title, artist_name = (title.rsplit(' - ', 1) + ["Unknown Artist"])[:2]
-
                 self.app.update_status(f"Qobuz: Searching for art for '{song_title}'...")
                 art_url, _ = self.fetch_album_art_and_duration(song_title.strip(), artist_name.strip())
-                large_image_asset = art_url or "qobuz"
 
-                self.rpc.update(details=song_title, state=f"by {artist_name}", large_image=large_image_asset,
-                                large_text=f"{song_title} - {artist_name}", small_image="qobuz_icon",
-                                small_text="Qobuz Player")
-
+                self.rpc.update(
+                    details=song_title,
+                    state=f"by {artist_name}",
+                    large_image=art_url or "qobuz",
+                    large_text=f"{song_title} - {artist_name}",
+                    small_image="qobuz_icon",
+                    small_text="Qobuz Player"
+                )
                 self.app.update_status(f"Qobuz: Updated to '{song_title}'")
             except Exception as e:
                 print(f"Force update failed: {e}")
@@ -204,7 +213,6 @@ class RPCSynchronizer(threading.Thread):
             time.sleep(2)
 
 
-# --- TKINTER GUI CLASS (with working server logic) ---
 class QobuzRPCApp:
     def __init__(self, master):
         self.master = master
@@ -218,7 +226,7 @@ class QobuzRPCApp:
         self.server_thread = None
         self.running = False
 
-        # --- Your original GUI setup ---
+        # --- Your Original Styles ---
         self.font_main = ('Inter', 12)
         self.font_status = ('Inter', 14, 'bold')
         self.color_text = '#FFFFFF'
@@ -226,51 +234,60 @@ class QobuzRPCApp:
         self.color_status_fail = '#F04747'
         self.color_button_start = '#7289DA'
         self.color_button_stop = '#F04747'
+
         self.main_frame = tk.Frame(master, bg=master['bg'], padx=20, pady=20)
         self.main_frame.pack(fill='both', expand=True)
         self.main_frame.grid_columnconfigure(0, weight=1)
+
         row_idx = 0
         tk.Label(self.main_frame, text="Qobuz Discord Rich Presence", bg=master['bg'], fg=self.color_text,
-                 font=('Inter', 18, 'bold')).grid(row=row_idx, column=0, pady=(0, 5), sticky='ew');
+                 font=('Inter', 18, 'bold')).grid(row=row_idx, column=0, pady=(0, 5), sticky='ew')
+
         row_idx += 1
         tk.Label(self.main_frame, text="Click Start RPC to track Qobuz on Discord.", bg=master['bg'], fg='#C0C4CC',
-                 font=('Inter', 12)).grid(row=row_idx, column=0, pady=(0, 20), sticky='ew');
+                 font=('Inter', 12)).grid(row=row_idx, column=0, pady=(0, 20), sticky='ew')
+
         row_idx += 1
         tk.Label(self.main_frame, text="Discord Requirement:", bg=master['bg'], fg=self.color_text,
-                 font=self.font_main).grid(row=row_idx, column=0, pady=(5, 0), sticky='ew');
+                 font=self.font_main).grid(row=row_idx, column=0, pady=(5, 0), sticky='ew')
+
         row_idx += 1
         tk.Label(self.main_frame,
                  text="Must enable 'Display current activity as a status message' in Discord's User Settings > Activity Privacy.",
                  bg=master['bg'], fg='#C0C4CC', font=('Inter', 9), wraplength=500, justify=tk.CENTER).grid(row=row_idx,
                                                                                                            column=0,
-                                                                                                           sticky='ew');
+                                                                                                           sticky='ew')
+
         row_idx += 1
         tk.Label(self.main_frame, text="Current Status:", bg=master['bg'], fg=self.color_text,
-                 font=self.font_main).grid(row=row_idx, column=0, pady=(20, 5), sticky='ew');
+                 font=self.font_main).grid(row=row_idx, column=0, pady=(20, 5), sticky='ew')
+
         row_idx += 1
         self.status_var = tk.StringVar(value="Ready to Start")
         self.status_label = tk.Label(self.main_frame, textvariable=self.status_var, bg=master['bg'],
                                      fg=self.color_status_ok, font=self.font_status)
-        self.status_label.grid(row=row_idx, column=0, sticky='ew');
+        self.status_label.grid(row=row_idx, column=0, sticky='ew')
+
         row_idx += 1
         self.button_frame = tk.Frame(self.main_frame, bg=master['bg'], pady=20)
-        self.button_frame.grid(row=row_idx, column=0, sticky='s');
+        self.button_frame.grid(row=row_idx, column=0, sticky='s')
+
         row_idx += 1
         self.start_button = tk.Button(self.button_frame, text="Start RPC", command=self.start_rpc, width=15, height=2,
                                       bg=self.color_button_start, fg=self.color_text, font=self.font_main,
                                       relief='flat', activebackground=self.color_button_start,
                                       activeforeground=self.color_text, cursor="hand2")
         self.start_button.pack(side=tk.LEFT, padx=15)
+
         self.stop_button = tk.Button(self.button_frame, text="Stop RPC", command=self.stop_rpc, width=15, height=2,
                                      bg=self.color_button_stop, fg=self.color_text, font=self.font_main, relief='flat',
                                      activebackground=self.color_button_stop, activeforeground=self.color_text,
                                      state=tk.DISABLED, cursor="hand2")
         self.stop_button.pack(side=tk.LEFT, padx=15)
-        if not RPC_AVAILABLE:
-            self.update_status("Missing Dependencies", color=self.color_status_fail)
-            self.start_button.config(state=tk.DISABLED)
+
         version_frame = tk.Frame(self.main_frame, bg=master['bg'], pady=5)
-        version_frame.grid(row=row_idx, column=0, sticky='ew');
+        version_frame.grid(row=row_idx, column=0, sticky='ew')
+
         row_idx += 1
         tk.Label(version_frame, text=f"Local Version: {LOCAL_VERSION}", bg=master['bg'], fg='#C0C4CC',
                  font=('Inter', 10)).pack(pady=(0, 5))
@@ -295,17 +312,10 @@ class QobuzRPCApp:
 
         @flask_app.route('/shutdown', methods=['POST'])
         def shutdown():
-            func = request.environ.get('werkzeug.server.shutdown')
-            if func is None: raise RuntimeError('Not running with the Werkzeug Server')
-            func()
+            os._exit(0)
             return 'Server shutting down...'
 
-        print("Starting Flask server on http://0.0.0.0:5000")
-        try:
-            flask_app.run(host='0.0.0.0', port=5000, debug=False)
-        except Exception as e:
-            print(f"Flask server encountered an error: {e}")
-        print("Flask server has stopped.")
+        flask_app.run(host='127.0.0.1', port=5000, debug=False)
 
     def start_rpc(self):
         if self.running: return
@@ -324,27 +334,20 @@ class QobuzRPCApp:
         self.running = False
         self.start_button.config(state=tk.NORMAL)
         self.stop_button.config(state=tk.DISABLED)
-        if self.rpc_thread:
-            self.rpc_thread.stop()
-        if self.server_thread:
-            try:
-                requests.post('http://127.0.0.1:5000/shutdown', timeout=1)
-            except requests.exceptions.ConnectionError:
-                pass
+        if self.rpc_thread: self.rpc_thread.stop()
         self.update_status("Stopped", color=self.color_text)
 
     def on_close(self):
-        if self.running:
-            self.stop_rpc()
+        if self.running: self.stop_rpc()
         self.master.destroy()
 
     def update_status(self, message, color=None):
         self.status_var.set(message)
         if color:
             self.status_label.config(fg=color)
-        elif "Error" in message or "Failed" in message or "Update" in message:
+        elif any(word in message for word in ["Error", "Failed", "Update"]):
             self.status_label.config(fg=self.color_status_fail)
-        elif "Playing" in message or "Connected" in message or "latest" in message:
+        elif any(word in message for word in ["Playing", "Connected", "latest", "Updated"]):
             self.status_label.config(fg=self.color_status_ok)
         else:
             self.status_label.config(fg=self.color_text)
@@ -369,14 +372,7 @@ class QobuzRPCApp:
             self.update_status(message, color=self.color_status_ok)
 
 
-# --- Main execution block ---
 if __name__ == '__main__':
-    try:
-        from flask import Flask
-    except ImportError:
-        print("Missing web server library. Please run: pip install Flask")
-        exit()
-
     root = tk.Tk()
     app = QobuzRPCApp(root)
     root.mainloop()
